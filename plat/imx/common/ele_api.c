@@ -43,3 +43,19 @@ void ele_get_soc_info(void)
 	resp = mmio_read_32(ELE_MU_RRx(1));
 	VERBOSE("msg : %x, resp: %x\n", msg, resp);
 }
+
+#define ELE_RELEASE_GMID	0x17e40106
+void ele_release_gmid(void)
+{
+	uint32_t msg, resp;
+
+	mmio_write_32(ELE_MU_TRx(0), ELE_RELEASE_GMID);
+
+	do {
+		resp = mmio_read_32(ELE_MU_RSR);
+	} while ((resp & 0x3) != 0x3);
+
+	msg = mmio_read_32(ELE_MU_RRx(0));
+	resp = mmio_read_32(ELE_MU_RRx(1));
+	NOTICE("msg : %x, resp: %x\n", msg, resp);
+}
