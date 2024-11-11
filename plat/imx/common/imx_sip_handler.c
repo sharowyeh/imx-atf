@@ -20,6 +20,9 @@
 #if defined(PLAT_imx8qm)
 #include <imx8qm_bl31_setup.h>
 #endif
+#if defined(PLAT_imx8qx)
+#include <imx8qx_bl31_setup.h>
+#endif
 
 #if defined(PLAT_imx8qm) || defined(PLAT_imx8qx) || defined(PLAT_imx8dx) || defined(PLAT_imx8dxl)
 
@@ -308,7 +311,7 @@ int imx_hifi_xrdc(uint32_t smc_fid)
 }
 #endif
 
-#if defined(PLAT_imx8qm) && defined(SPD_trusty)
+#if (defined(PLAT_imx8qm) || defined(PLAT_imx8qx)) && defined(SPD_trusty)
 int imx_configure_memory_for_vpu(void *handle,
 				 u_register_t x1) {
 	int err;
@@ -328,6 +331,5 @@ int imx_get_partition_number(void *handle) {
 		SMC_RET1(handle, rc);
 	}
 }
-
 #endif
 
