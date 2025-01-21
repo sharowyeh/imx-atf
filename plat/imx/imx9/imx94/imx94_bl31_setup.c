@@ -37,8 +37,9 @@ static const mmap_region_t imx_mmap[] = {
 	/* GPIO2-5 */
 	MAP_REGION_FLAT(GPIO2_BASE, 0x20000, MT_DEVICE | MT_RW),
 	MAP_REGION_FLAT(GPIO4_BASE, 0x20000, MT_DEVICE | MT_RW),
+	MAP_REGION_FLAT(GPIO6_BASE, 0x20000, MT_DEVICE | MT_RW),
 	MAP_REGION_FLAT(ELE_MU_BASE, 0x10000, MT_DEVICE | MT_RW),
-	MAP_REGION_FLAT(0x42b90000, 0x10000, MT_DEVICE | MT_RW),
+	MAP_REGION_FLAT(AIPS4_BASE, AIPSx_SIZE, MT_DEVICE | MT_RW),
 
 	{0},
 };
@@ -85,26 +86,18 @@ void bl31_early_platform_setup2(u_register_t arg0, u_register_t arg1,
 
 void bl31_plat_arch_setup(void)
 {
+	uintptr_t gpio_base[] = {
+		GPIO2_BASE, GPIO3_BASE, GPIO4_BASE, GPIO5_BASE,
+		GPIO6_BASE, GPIO7_BASE
+	};
+
 	/* Assign all the GPIO pins to non-secure world by default */
-	mmio_write_32(GPIO2_BASE + 0x10, 0xffffffff);
-	mmio_write_32(GPIO2_BASE + 0x14, 0x3);
-	mmio_write_32(GPIO2_BASE + 0x18, 0xffffffff);
-	mmio_write_32(GPIO2_BASE + 0x1c, 0x3);
-
-	mmio_write_32(GPIO3_BASE + 0x10, 0xffffffff);
-	mmio_write_32(GPIO3_BASE + 0x14, 0x3);
-	mmio_write_32(GPIO3_BASE + 0x18, 0xffffffff);
-	mmio_write_32(GPIO3_BASE + 0x1c, 0x3);
-
-	mmio_write_32(GPIO4_BASE + 0x10, 0xffffffff);
-	mmio_write_32(GPIO4_BASE + 0x14, 0x3);
-	mmio_write_32(GPIO4_BASE + 0x18, 0xffffffff);
-	mmio_write_32(GPIO4_BASE + 0x1c, 0x3);
-
-	mmio_write_32(GPIO5_BASE + 0x10, 0xffffffff);
-	mmio_write_32(GPIO5_BASE + 0x14, 0x3);
-	mmio_write_32(GPIO5_BASE + 0x18, 0xffffffff);
-	mmio_write_32(GPIO5_BASE + 0x1c, 0x3);
+	for (unsigned i = 0U; i < ARRAY_SIZE(gpio_base); i++) {
+		mmio_write_32(gpio_base[i] + 0x10, 0xffffffff);
+		mmio_write_32(gpio_base[i] + 0x14, 0x3);
+		mmio_write_32(gpio_base[i] + 0x18, 0xffffffff);
+		mmio_write_32(gpio_base[i] + 0x1c, 0x3);
+	}
 
 	mmap_add_region(BL31_BASE, BL31_BASE, (BL31_LIMIT - BL31_BASE),
 		MT_MEMORY | MT_RW | MT_SECURE);
