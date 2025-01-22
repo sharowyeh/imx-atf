@@ -32,6 +32,7 @@ extern void imx9_init_scmi_server();
 static const mmap_region_t imx_mmap[] = {
 	/* APIS2 mapping  */
 	MAP_REGION_FLAT(AIPS2_BASE, AIPSx_SIZE, MT_DEVICE | MT_RW),
+	MAP_REGION_FLAT(AIPS3_BASE, AIPSx_SIZE, MT_DEVICE | MT_RW),
 	MAP_REGION_FLAT(PLAT_GICD_BASE, 0x200000, MT_DEVICE | MT_RW),
 	MAP_REGION_FLAT(AIPS1_BASE, AIPSx_SIZE, MT_DEVICE | MT_RW),
 	/* GPIO2-5 */

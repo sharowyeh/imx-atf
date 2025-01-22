@@ -19,6 +19,7 @@
 #include <drivers/arm/css/scmi.h>
 
 #include <imx_scmi_client.h>
+#include <ele_api.h>
 #include <plat_imx8.h>
 #include <scmi_imx9.h>
 
@@ -81,6 +82,8 @@
 #define GPIO_PIN_MAX_NUM	U(32)
 #define GPIO_CTX(addr, num)	\
 	{.base = (addr), .pin_num = (num), }
+
+extern void ele_release_gmid(void);
 
 static bool boot_stage[6] = {false, true, true, true, true, true};
 static unsigned int scmi_cpu_id[] = {
@@ -330,6 +333,22 @@ void wdog_restore(uintptr_t base, uint32_t index)
 	}
 }
 
+static uint32_t xspi_mto[2];
+
+void xspi_save(void)
+{
+	/* Save the XSPI MTO register */
+	xspi_mto[0]  = mmio_read_32(XSPI1_BASE + XSPI_MTO);
+	xspi_mto[1]  = mmio_read_32(XSPI2_BASE + XSPI_MTO);
+}
+
+void xspi_restore(void)
+{
+	/* request the GMID first */
+	ele_release_gmid();
+	mmio_write_32(XSPI1_BASE + XSPI_MTO, xspi_mto[0]);
+	mmio_write_32(XSPI2_BASE + XSPI_MTO, xspi_mto[1]);
+}
 
 void imx_set_sys_wakeup(unsigned int last_core, bool pdn)
 {
@@ -544,6 +563,7 @@ void imx_pwr_domain_suspend(const psci_power_state_t *target_state)
 
 	if (is_local_state_off(SYSTEM_PWR_STATE(target_state))) {
 		nocmix_pwr_down(core_id);
+		xspi_save();
 		gpio_save(wakeupmix_gpio_ctx, 6);
 		wdog_save(WDOG3_BASE, 0U);
 		wdog_save(WDOG4_BASE, 1U);
@@ -586,6 +606,7 @@ void imx_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 	/* system level */
 	if (is_local_state_off(SYSTEM_PWR_STATE(target_state))) {
 		nocmix_pwr_up(core_id);
+		xspi_restore();
 		gpio_restore(wakeupmix_gpio_ctx, 6);
 		wdog_restore(WDOG3_BASE, 0U);
 		wdog_restore(WDOG4_BASE, 1U);
