@@ -78,6 +78,10 @@
 
 #define SM_AP_SEMA_ADDR			0x442213F8
 
+#define XSPI1_BASE			U(0x42b90000)
+#define XSPI2_BASE			U(0x42bE0000)
+#define XSPI_MTO			U(0x928)
+
 #define COUNTER_FREQUENCY		24000000
 
 #endif /* platform_def.h */
