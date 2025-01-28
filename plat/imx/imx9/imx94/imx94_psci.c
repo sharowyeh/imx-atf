@@ -406,10 +406,6 @@ void imx_set_sys_wakeup(unsigned int last_core, bool pdn)
 		 */
 		wakeup_flags = SCMI_GPC_WAKEUP;
 		mode = SCMI_CPU_SLEEP_SUSPEND;
-
-		/* mask the IRQs to the last core by default */
-		scmi_core_Irq_wake_set(imx9_scmi_handle, cpu_info[last_core].cpu_id,
-			       0U, IMR_NUM, irq_mask);
 	} else {
 		/* switch to GIC wakeup source for last_core and cluster */
 		wakeup_flags = SCMI_GIC_WAKEUP;
@@ -437,16 +433,17 @@ void imx_set_sys_wakeup(unsigned int last_core, bool pdn)
 		}
 	}
 
-	/* Set IRQ wakeup mask for the cluster */
+	/* Set IRQ wakeup mask for the last core & cluster */
+	scmi_core_Irq_wake_set(imx9_scmi_handle, cpu_info[last_core].cpu_id,
+			       0U, IMR_NUM, irq_mask);
 	scmi_core_Irq_wake_set(imx9_scmi_handle, cpu_info[IMX9_A55P_IDX].cpu_id,
 			       0U, IMR_NUM, irq_mask);
-
 	/*
 	 * switch to GPC wakeup source, config the target mode to SUSPEND
 	 * for both the cluster and last core.
 	 */
 	scmi_core_set_sleep_mode(imx9_scmi_handle, scmi_cpu_id[last_core],
-				 wakeup_flags | SCMI_RESUME_CPU, mode);
+				 wakeup_flags, mode);
 	scmi_core_set_sleep_mode(imx9_scmi_handle, scmi_cpu_id[IMX9_A55P_IDX],
 				 wakeup_flags, mode);
 
@@ -572,7 +569,7 @@ void imx_pwr_domain_off(const psci_power_state_t *target_state)
 
 	/*
 	 * mask all the GPC IRQ wakeup to make sure no IRQ can wakeup this core
-	 * s we need to use SW_WAKEUP for hotplug purpose
+	 * as we need to use SW_WAKEUP for hotplug purpose
 	 */
 	scmi_core_Irq_wake_set(imx9_scmi_handle, scmi_cpu_id[core_id], 0U, IMR_NUM, mask);
 
