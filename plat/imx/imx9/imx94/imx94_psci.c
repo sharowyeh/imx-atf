@@ -151,10 +151,10 @@ static struct qchannel_hsk_config {
 /*
  * IRQ masks used to check if any of the below IRQ is
  * enabled as the wakeup source:
- * lpuart1: 21, flexcan2-5: 40, 42, 44, 46
+ * lpuart1: 21, flexcan2-5: 40, 42, 44, 46, usdhc1-3: 96, 97, 116
  */
 static uint32_t wakeupmix_irq_mask[IMR_NUM] = {
-	0x2000, 0x5500, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
+	0x2000, 0x5500, 0x0, 0x100003, 0x0, 0x0, 0x0, 0x0
 };
 
 static uint32_t gpio_ctrl_offset[GPIO_CTRL_REG_NUM] = {
@@ -598,6 +598,7 @@ void imx_pwr_domain_suspend(const psci_power_state_t *target_state)
 				cpu_lpm_cfg);
 	}
 }
+
 void imx_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 {
 	uint64_t mpidr = read_mpidr_el1();
