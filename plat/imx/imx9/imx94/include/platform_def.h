@@ -88,6 +88,8 @@
 #define IMX9_MU1_BASE			0x44220000
 #define MU_GCR_OFF			0x114
 
+#define SM_AP_SEMA_ADDR			0x442213F8
+
 #define COUNTER_FREQUENCY		24000000
 
 #endif /* platform_def.h */
