@@ -77,6 +77,29 @@
 #define DEBUG_WAKEUP_MASK BIT(1)
 #define EVENT_WAKEUP_MASK BIT(0)
 
+#define SCMI_IMX_SYS_POWER_STATE_MODE_MASK	0xC0000000U
+#define SM_ACTIVE		BIT(0)
+#define FRO_ACTIVE		BIT(1)
+#define SYSCTR_ACTIVE		BIT(2)
+#define PMIC_STBY_INACTIVE	BIT(3)
+#define OSC24M_ACTIVE		BIT(4)
+
+/*
+sleep_mode[3:0] – Currently unused.
+sleep_mode[7:4] – sleep mode performance level
+*/
+#define SM_PERF_LVL_PRK	U(0)
+#define SM_PERF_LVL_LOW	U(1)
+#define SM_PERF_LVL_NOM	U(2)
+#define SM_PERF_LVL_ODV	U(3)
+#define SM_PERF_LVL_SOD	U(4)
+
+#define SYS_SLEEP_MODE_L(x)	(((x) & 0xF) << 16U)
+#define SYS_SLEEP_MODE_H(x)	(((x) & 0xF) << 20U)
+#define SYS_SLEEP_FLAGS(x)	(((x) & 0xFFFFU))
+
+#define NETC_IREC_PCI_INT_X0	359
+
 #define GPIO_S_BASE(x)		((x) | BIT(28))
 #define GPIO_CTRL_REG_NUM	U(8)
 #define GPIO_PIN_MAX_NUM	U(32)
@@ -127,6 +150,7 @@ static struct scmi_cpu_pd_info cpu_info[] = {
 
 static bool gpio_wakeup;
 static bool has_wakeup_irq;
+static bool has_netc_irq;
 
 static struct qchannel_hsk_config {
 	const uint32_t per_idx;
@@ -139,6 +163,17 @@ static struct qchannel_hsk_config {
 	{ CPU_PER_LPI_IDX_CAN5, 46 },
 
 	{ CPU_PER_LPI_IDX_LPUART1, 21 },
+	{ CPU_PER_LPI_IDX_LPUART2, 22 },
+	{ CPU_PER_LPI_IDX_LPUART3, 74 },
+	{ CPU_PER_LPI_IDX_LPUART4, 75 },
+	{ CPU_PER_LPI_IDX_LPUART5, 76 },
+	{ CPU_PER_LPI_IDX_LPUART6, 77 },
+	{ CPU_PER_LPI_IDX_LPUART7, 78 },
+	{ CPU_PER_LPI_IDX_LPUART8, 79 },
+	{ CPU_PER_LPI_IDX_LPUART9, 80 },
+	{ CPU_PER_LPI_IDX_LPUART10, 81 },
+	{ CPU_PER_LPI_IDX_LPUART11, 82 },
+	{ CPU_PER_LPI_IDX_LPUART12, 83 },
 
 	{ CPU_PER_LPI_IDX_GPIO2 },
 	{ CPU_PER_LPI_IDX_GPIO3 },
@@ -154,7 +189,8 @@ static struct qchannel_hsk_config {
  * lpuart1: 21, flexcan2-5: 40, 42, 44, 46, usdhc1-3: 96, 97, 116
  */
 static uint32_t wakeupmix_irq_mask[IMR_NUM] = {
-	0x2000, 0x5500, 0x0, 0x100003, 0x0, 0x0, 0x0, 0x0
+	0x600000, 0x5500, 0xFFC0, 0x100003, 0x0, 0x0, 0x0, 0x0,
+	0x0, 0x0, 0x0, 0x80,
 };
 
 static uint32_t gpio_ctrl_offset[GPIO_CTRL_REG_NUM] = {
@@ -379,6 +415,8 @@ void imx_set_sys_wakeup(unsigned int last_core, bool pdn)
 		wakeup_flags = SCMI_GIC_WAKEUP;
 		mode = SCMI_CPU_SLEEP_WAIT;
 		has_wakeup_irq = false;
+		/* clear the netcmix irq enabled flag */
+		has_netc_irq = false;
 	}
 
 	/* Set the GPC IMRs based on GIC IRQ mask setting */
@@ -390,7 +428,12 @@ void imx_set_sys_wakeup(unsigned int last_core, bool pdn)
 		}
 
 		if ((irq_mask[i] & wakeupmix_irq_mask[i]) != wakeupmix_irq_mask[i]) {
-			has_wakeup_irq = true;
+			/* Check whether netc irec pci int_x0 is allowed for wakeup */
+			if ((i == (NETC_IREC_PCI_INT_X0 >> 5)) &&
+			    (wakeupmix_irq_mask[i] & (1 << (NETC_IREC_PCI_INT_X0 % 32))))
+				has_netc_irq = true;
+			else
+				has_wakeup_irq = true;
 		}
 	}
 
@@ -541,6 +584,7 @@ void imx_pwr_domain_suspend(const psci_power_state_t *target_state)
 {
 	uint64_t mpidr = read_mpidr_el1();
 	unsigned int core_id = MPIDR_AFFLVL1_VAL(mpidr);
+	uint32_t sys_mode;
 	bool keep_wakupmix_on = false;
 
 	/* do cpu level config */
@@ -596,6 +640,14 @@ void imx_pwr_domain_suspend(const psci_power_state_t *target_state)
 		scmi_core_lpm_mode_set(imx9_scmi_handle, cpu_info[IMX9_A55P_IDX].cpu_id,
 				sizeof(cpu_lpm_cfg)/sizeof(struct scmi_lpm_config),
 				cpu_lpm_cfg);
+
+		sys_mode = SCMI_IMX_SYS_POWER_STATE_MODE_MASK;
+		if (has_netc_irq) {
+			sys_mode |= SYS_SLEEP_MODE_H(SM_PERF_LVL_LOW);
+			scmi_sys_pwr_state_set(imx9_scmi_handle,
+					       SCMI_SYS_PWR_FORCEFUL_REQ,
+					       sys_mode);
+		}
 	}
 }
 
@@ -603,9 +655,16 @@ void imx_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 {
 	uint64_t mpidr = read_mpidr_el1();
 	unsigned int core_id = MPIDR_AFFLVL1_VAL(mpidr);
+	uint32_t sys_mode;
 
 	/* system level */
 	if (is_local_state_off(SYSTEM_PWR_STATE(target_state))) {
+		sys_mode = SCMI_IMX_SYS_POWER_STATE_MODE_MASK;
+		if (has_netc_irq) {
+			scmi_sys_pwr_state_set(imx9_scmi_handle,
+					       SCMI_SYS_PWR_FORCEFUL_REQ,
+					       sys_mode);
+		}
 		nocmix_pwr_up(core_id);
 		xspi_restore();
 		gpio_restore(wakeupmix_gpio_ctx, 6);
