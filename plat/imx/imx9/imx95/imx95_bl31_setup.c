@@ -19,6 +19,7 @@
 #include <plat/common/platform.h>
 
 #include <ele_api.h>
+#include <imx_scmi_client.h>
 #include <imx8_lpuart.h>
 #include <platform_def.h>
 #include <plat_imx8.h>
@@ -166,8 +167,7 @@ void bl31_platform_setup(void)
 	/* get soc info */
 	ele_get_soc_info();
 
-	extern void plat_imx95_setup(void);
-	plat_imx95_setup();
+	plat_imx9_scmi_setup();
 }
 
 entry_point_info_t *bl31_plat_get_next_image_ep_info(unsigned int type)
