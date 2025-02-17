@@ -18,6 +18,8 @@
 #define CPU_RUN_MODE_STOP		2
 #define CPU_RUN_MODE_SLEEP		3
 
+#define IMX94_CPU_M33S			8U
+
 #define MCORE_IDX(x)	(((x) < 7 ) ? ((x) - 1) : ((x) - 6))
 
 struct mcore_agents {
@@ -78,6 +80,17 @@ int imx_src_handler(uint32_t smc_fid, u_register_t x1, u_register_t x2,
 					       SCMI_CPU_VEC_FLAGS_BOOT);
 		if (ret)
 			return ret;
+
+		/*
+		 * Need to stop M33S once before start to make sure M33S
+		 * is in correct reset status
+		 */
+		if (x3 == IMX94_CPU_M33S) {
+			ret = scmi_core_stop(imx9_scmi_handle, x3);
+			if (ret) {
+				return ret;
+			}
+		}
 
 		ret = scmi_core_start(imx9_scmi_handle, x3);
 		if (ret)
