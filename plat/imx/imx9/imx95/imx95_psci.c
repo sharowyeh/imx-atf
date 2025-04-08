@@ -420,7 +420,7 @@ void imx_set_sys_wakeup(uint32_t last_core, bool pdn)
 	 * Set IRQ wakeup mask for last core. As a workaorund for HW bug all wakeup
 	 * interrupts are directed to the cluster
 	 */
-	if (si_rev == IMX95_SREV_A1) {
+	if (si_rev < IMX95_SREV_B0) {
 		scmi_core_Irq_wake_set(imx9_scmi_handle, cpu_info[last_core].cpu_id,
 			       0, IMR_NUM, irq_mask);
 	}
@@ -444,7 +444,7 @@ void imx_set_sys_wakeup(uint32_t last_core, bool pdn)
 		}
 	}
 
-	if (si_rev != IMX95_SREV_A1) {
+	if (si_rev >= IMX95_SREV_B0) {
 		/*
 		 * For B0 : wakeup sources are enabled in irq_mask for both core
 		 * and cluster. The GPC HW mechanism is use to wakeup the core.
@@ -858,7 +858,7 @@ int plat_setup_psci_ops(uintptr_t sec_entrypoint,
 	scmi_core_nonIrq_wake_set(imx9_scmi_handle, scmi_cpu_id[IMX95_A55P_IDX], 0, 1, mask);
 
 	si_rev = soc_info.soc >> 24;
-	a55p_lpmsetting = (si_rev == IMX95_SREV_A1) ?
+	a55p_lpmsetting = (si_rev < IMX95_SREV_B0) ?
 			SCMI_CPU_PD_LPM_ON_ALWAYS : SCMI_CPU_PD_LPM_ON_RUN;
 
 	/* Setup A55 Cluster state for Cpuidle. */
