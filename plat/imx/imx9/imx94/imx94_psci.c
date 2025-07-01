@@ -369,6 +369,7 @@ void wdog_restore(uintptr_t base, uint32_t index)
 	}
 }
 
+#if !IMX_CRRM
 static uint32_t xspi_mto[2];
 
 void xspi_save(void)
@@ -385,6 +386,11 @@ void xspi_restore(void)
 	mmio_write_32(XSPI1_BASE + XSPI_MTO, xspi_mto[0]);
 	mmio_write_32(XSPI2_BASE + XSPI_MTO, xspi_mto[1]);
 }
+
+#else
+void xspi_save(void) {}
+void xspi_restore(void) {}
+#endif
 
 void imx_set_sys_wakeup(unsigned int last_core, bool pdn)
 {
@@ -610,6 +616,10 @@ void imx_pwr_domain_suspend(const psci_power_state_t *target_state)
 		wdog_save(WDOG4_BASE, 1U);
 		keep_wakupmix_on = (gpio_wakeup || has_wakeup_irq);
 
+#if IMX_CRRM
+		/* Keep XSPI always on to avoid setting lost */
+		keep_wakupmix_on = true;
+#endif
 		/*
 		 * Setup NOCMIX to power down when Linux suspends.
 		 * This is needs to be updated when wakeupmix can be powered down too.
