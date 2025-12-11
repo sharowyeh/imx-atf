@@ -398,6 +398,7 @@ void imx_set_sys_wakeup(uint32_t last_core, bool pdn)
 	uint32_t wakeup_flags;
 	uint32_t mode;
 	uintptr_t gicd_base = PLAT_GICD_BASE;
+	INFO("ATF IMX95 PSCI: %s called, last_core=%u, pdn=%d\n", __func__, last_core, pdn);
 
 	if (pdn) {
 		/*
@@ -527,6 +528,7 @@ int imx_validate_power_state(uint32_t power_state,
 void imx_set_cpu_boot_entry(uint32_t core_id, uint64_t boot_entry,
 			    uint32_t flag)
 {
+	INFO("ATF IMX95 PSCI: %s called, core_id=%u entry=0x%lx flag=0x%x\n", __func__, core_id, boot_entry, flag);
 	/* set the cpu core reset entry: BLK_CTRL_S */
 	scmi_core_set_reset_addr(imx9_scmi_handle, boot_entry,
 				 scmi_cpu_id[core_id], flag);
@@ -536,6 +538,7 @@ int imx_pwr_domain_on(u_register_t mpidr)
 {
 	uint32_t core_id = MPIDR_AFFLVL1_VAL(mpidr);
 	uint32_t mask = DEBUG_WAKEUP_MASK | EVENT_WAKEUP_MASK;
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 
 	if (boot_stage[core_id]) {
 		imx_set_cpu_boot_entry(core_id, secure_entrypoint,
@@ -565,6 +568,7 @@ void imx_pwr_domain_on_finish(const psci_power_state_t *target_state)
 {
 	uint64_t mpidr = read_mpidr_el1();
 	uint32_t core_id = MPIDR_AFFLVL1_VAL(mpidr);
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 
 	scmi_core_set_sleep_mode(imx9_scmi_handle, cpu_info[core_id].cpu_id,
 				 SCMI_GIC_WAKEUP, SCMI_CPU_SLEEP_WAIT);
@@ -582,6 +586,7 @@ void imx_pwr_domain_off(const psci_power_state_t *target_state)
 		0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
 		0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff
 	};
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 
 	plat_gic_cpuif_disable();
 
@@ -613,6 +618,7 @@ void imx_pwr_domain_suspend(const psci_power_state_t *target_state)
 	uint32_t l3_retn = 0;
 	uint32_t sys_mode;
 	bool keep_wakupmix_on = false;
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 
 	/* do cpu level config */
 	if (is_local_state_off(CORE_PWR_STATE(target_state))) {
@@ -684,6 +690,7 @@ void imx_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 	uint64_t mpidr = read_mpidr_el1();
 	uint32_t core_id = MPIDR_AFFLVL1_VAL(mpidr);
 	uint32_t sys_mode;
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 
 	/* system level */
 	if (is_local_state_off(SYSTEM_PWR_STATE(target_state))) {
@@ -731,6 +738,7 @@ void imx_pwr_domain_suspend_finish(const psci_power_state_t *target_state)
 void imx_get_sys_suspend_power_state(psci_power_state_t *req_state)
 {
 	uint32_t i;
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 
 	for (i = IMX_PWR_LVL0; i <= PLAT_MAX_PWR_LVL; i++) {
 		req_state->pwr_domain_state[i] = PLAT_MAX_OFF_STATE;
@@ -747,7 +755,7 @@ void __dead2 imx_pwr_domain_pwr_down_wfi(const psci_power_state_t *target_state)
 void __dead2 imx_system_reset(void)
 {
 	int ret;
-
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 	/* TODO: temp workaround for GIC to let reset done */
 	gicd_clr_ctlr(PLAT_GICD_BASE,
 		      CTLR_ENABLE_G0_BIT |
@@ -770,7 +778,7 @@ void __dead2 imx_system_reset(void)
 int __dead2 imx_system_reset2(int is_vendor, int reset_type, u_register_t cookie)
 {
 	int ret;
-
+	INFO("ATF IMX95 PSCI: %s called, reset_type=%d\n", __func__, reset_type);
 	/* TODO: temp workaround for GIC to let reset done */
 	gicd_clr_ctlr(PLAT_GICD_BASE,
 		      CTLR_ENABLE_G0_BIT |
@@ -812,7 +820,7 @@ int __dead2 imx_system_reset2(int is_vendor, int reset_type, u_register_t cookie
 void __dead2 imx_system_off(void)
 {
 	int ret;
-
+	INFO("ATF IMX95 PSCI: %s called\n", __func__);
 	ret = scmi_sys_pwr_state_set(imx9_scmi_handle,
 				     SCMI_SYS_PWR_FORCEFUL_REQ,
 				     SCMI_SYS_PWR_SHUTDOWN);
