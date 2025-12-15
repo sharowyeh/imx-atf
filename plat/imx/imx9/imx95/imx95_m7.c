@@ -36,6 +36,8 @@ int imx_src_handler(uint32_t smc_fid, u_register_t x1, u_register_t x2,
 	static uint32_t num_lm = 0U;
 	uint32_t state = 1;
 
+	INFO("ATF IMX95 M7: %s called, smc_fid=0x%x\n", __func__, smc_fid);
+
 	if (agent_id_resp == -1U) {
 		ret = scmi_base_protocol_attributes(imx9_scmi_handle,
 						    &num_protocols,
@@ -59,12 +61,16 @@ int imx_src_handler(uint32_t smc_fid, u_register_t x1, u_register_t x2,
 			agent_id_resp = -1U;
 	}
 
+	INFO("ATF IMX95 M7: %s got agent_id=0x%x\n", __func__, agent_id_resp);
+
 	if (num_lm == 0U) {
 		ret = scmi_lmm_protocol_attributes(imx9_scmi_handle, &num_lm);
 		if (ret)
 			return ret;
 		INFO("num_lm %x\n", num_lm);
 	}
+
+	INFO("ATF IMX95 M7: %s got num_lm=%x, x1=0x%lx, x2=0x%lx\n", __func__, num_lm, x1, x2);
 
 	switch(x1) {
 	case IMX_SIP_SRC_M4_RESET_ADDR_SET:

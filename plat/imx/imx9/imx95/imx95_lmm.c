@@ -10,11 +10,14 @@
 #include <common/runtime_svc.h>
 
 #include <imx_scmi_client.h>
+#include <common/debug.h>
 
 int imx_lmm_handler(uint32_t smc_fid, u_register_t x1, u_register_t x2,
 		    u_register_t x3, void *handle)
 {
 	int ret;
+
+	INFO("ATF IMX95 LMM: %s called, smc_fid=0x%x, x1=%lx, x2=%lx\n", __func__, smc_fid, x1, x2);
 
 	switch (x1) {
 	case IMX_SIP_LMM_BOOT:
